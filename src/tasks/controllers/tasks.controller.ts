@@ -5,7 +5,7 @@ import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common'
 export class TasksController {
 
     @Get()
-    getAll() {
+    getAll() :number[]{
         return [1,2,3]
     }
 
