@@ -43,9 +43,11 @@ export class AuthController {
   async createPasswordResetToken(
     @Body() createPasswordResetTokenDto: CreatePasswordResetTokenDto,
   ) {
-    return this.authService.createPasswordResetToken(
+    await this.authService.createPasswordResetToken(
       createPasswordResetTokenDto,
     );
+
+    return { message: 'Password reset email sent' };
   }
 
   @Post('/password-reset')

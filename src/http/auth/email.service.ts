@@ -24,7 +24,7 @@ export class EmailService {
     return new Promise((resolve, reject) => {
       this.emailClient.sendMail(
         {
-          from: '"Your Name" <youremail@yourdomain.com>',
+          from: '"MarcApp" <postmaster@sandboxe9d7672a884f4c6bbd740cd8dab7e513.mailgun.org>',
           to,
           subject,
           text,

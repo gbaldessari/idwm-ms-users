@@ -14,7 +14,6 @@ import { hash } from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { differenceInMinutes } from 'date-fns';
 import { EmailService } from './email.service';
-import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AuthService {
@@ -56,53 +55,14 @@ export class AuthService {
       return;
     }
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.mailgun.org',
-      port: 587,
-      auth: {
-        user: 'postmaster@sandboxe9d7672a884f4c6bbd740cd8dab7e513.mailgun.org',
-        pass: '291e6b1289c99859dab46ccb22bdd38a-19806d14-f5a67df8',
-      },
-    });
-
-    const mailOptions = {
-      to: user.email,
-      from: 'postmaster@sandboxe9d7672a884f4c6bbd740cd8dab7e513.mailgun.org',
-      subject: 'Node.js Password Reset',
-      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
-      Please click on the following link, or paste this into your browser to complete the process:\n\n
-      http://localhost:3000/reset/${token}\n\n
-      If you did not request this, please ignore this email and your password will remain unchanged.\n`,
-    };
-
-    try {
-      if (!mailOptions.to) {
-        throw new Error('Recipient email is not defined');
-      }
-      await this.emailService.sendText(
-        mailOptions.to,
-        mailOptions.subject,
-        mailOptions.text,
-      );
-    } catch (error) {
-      if (error.code === 'ECONNECTION') {
-        throwHttpException(
-          HttpStatus.INTERNAL_SERVER_ERROR,
-          'Error de conexión al servidor SMTP',
-        );
-      } else if (error.code === 'EAUTH') {
-        throwHttpException(
-          HttpStatus.INTERNAL_SERVER_ERROR,
-          'Error de autenticación SMTP',
-        );
-      } else {
-        throwHttpException(
-          HttpStatus.INTERNAL_SERVER_ERROR,
-          'Error enviando el correo electrónico',
-        );
-      }
+    // Aquí es donde enviamos el correo de recuperación de contraseña
+    const subject = 'Password Reset';
+    const text = `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\nPlease click on the following link, or paste this into your browser to complete the process within one hour of receiving it:\n\nhttp://localhost:3000/reset/${token}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.\n`;
+    if (!user.email) {
+      throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'No email found');
       return;
     }
+    await this.emailService.sendText(user.email, subject, text);
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
@@ -214,7 +174,6 @@ export class AuthService {
         }
       },
     );
-
     return { message: this.i18n.translate('http.SUCCESS_CREATED') };
   }
 }
