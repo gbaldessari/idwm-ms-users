@@ -7,13 +7,11 @@ import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      User
-    ]),
+    TypeOrmModule.forFeature([User]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '60s'},
-    })
+      secret: 'TuClaveSecreta', // Cambia esto por tu propia clave secreta
+      signOptions: { expiresIn: '12h' }, // Opcional: especifica el tiempo de expiración del token
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService],

@@ -1,21 +1,31 @@
+version: '3'
 services:
-  postgres:
+  db:
     image: postgres
-    restart: always 
+    environment:
+      POSTGRES_DB: ${TYPEORM_DATABASE}
+      POSTGRES_USER: ${TYPEORM_USERNAME}
+      POSTGRES_PASSWORD: ${TYPEORM_PASSWORD}
     ports:
       - "5432:5432"
-    environment:
-      - DATABASE_HOST=localhost
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=ms-users-db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - mynetwork
 
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: 'admin@admin.com'
-      PGADMIN_DEFAULT_PASSWORD: 'admin'
-    ports:
-      - "80:80"
-    depends_on: 
-      - postgres
+#  pgadmin:
+#    image: dpage/pgadmin4
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: 'admin@admin.com'
+#      PGADMIN_DEFAULT_PASSWORD: 'admin'
+#    ports:
+#      - "80:80"
+#    depends_on:
+#      - postgres
+
+networks:
+  mynetwork:
+    driver: bridge
+
+volumes:
+  pgdata:

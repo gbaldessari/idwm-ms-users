@@ -32,7 +32,7 @@ import * as path from 'path';
         password: configService.get<string>('TYPEORM_PASSWORD'),
         username: configService.get<string>('TYPEORM_USERNAME'),
         entities: [User],
-        database: configService.get<string>('TYPEORM_NAME'),
+        database: configService.get<string>('TYPEORM_DATABASE'),
         synchronize: configService.get<boolean>('TYPEORM_SYNCHRONIZE'),
         logging: true,
       }),
