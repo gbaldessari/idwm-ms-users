@@ -30,8 +30,8 @@ export class User {
   @Column({ default: true })
   active?: boolean;
 
-  @Column({ 
-    type: 'uuid',
+  @Column({
+    type: 'uuid', 
     unique: true,
     name: 'reset_password_token',
     nullable: true,

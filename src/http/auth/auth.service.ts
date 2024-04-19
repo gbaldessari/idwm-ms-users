@@ -9,6 +9,9 @@ import { LoginAuthDto } from './dto/login.dto';
 import { hash, compare } from 'bcrypt';
 import { JwtService} from '@nestjs/jwt';
 import { JwtPayload } from './jwt-payload.interface';
+import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
+import { v4 } from 'uuid';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +25,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
+    
     const exist = await this.userRepository.findOne({
       where: {
         email: registerDto?.email,
@@ -81,4 +85,23 @@ export class AuthService {
     return data;
   };
 
+  async requestResetPassword(
+    requestResetPassword: RequestResetPasswordDto
+  ){
+    const { email } = requestResetPassword;
+    const user = await this.userRepository.findOne({where: { email }});
+
+    if (!user) throw new HttpException('USER_NOT_FOUND',404);
+
+    user.resetPasswordToken = v4();
+    this.userRepository.save(user);
+    
+    // email
+
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto){
+
+
+  }
 }
