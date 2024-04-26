@@ -5,12 +5,12 @@ export class RegisterDto {
   @ApiProperty({ description: 'El nombre del usuario', example: 'John' })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name?: string;
 
   @ApiProperty({ description: 'El apellido del usuario', example: 'Doe' })
   @IsString()
   @IsNotEmpty()
-  lastName: string;
+  lastName?: string;
 
   @ApiProperty({
     description: 'El correo electrónico del usuario',
@@ -19,7 +19,7 @@ export class RegisterDto {
   @IsString()
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email?: string;
 
   @ApiProperty({
     description: 'La contraseña del usuario',
@@ -27,7 +27,7 @@ export class RegisterDto {
   })
   @IsString()
   @IsNotEmpty()
-  password: string;
+  password?: string;
 
   @ApiProperty({
     description: 'La fecha de nacimiento del usuario',
@@ -35,5 +35,5 @@ export class RegisterDto {
   })
   @IsString()
   @IsNotEmpty()
-  birthdate: string;
+  birthdate?: string;
 }
