@@ -30,13 +30,11 @@ export class User {
   @Column({ default: true })
   active?: boolean;
 
-  @Column({
-    type: 'uuid', 
-    unique: true,
-    name: 'reset_password_token',
-    nullable: true,
-  })
+  @Column({ type: 'varchar', nullable: true })
   resetPasswordToken?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordExpires?: Date;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt?: string;
