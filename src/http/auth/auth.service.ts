@@ -28,7 +28,7 @@ export class AuthService {
 
   async createPasswordResetToken(
     @Body() createPasswordResetTokenDto: CreatePasswordResetTokenDto,
-  ): Promise<void> {
+  ) {
     let user;
     try {
       user = await this.userRepository.findOne({
@@ -57,7 +57,11 @@ export class AuthService {
 
     // Aquí es donde enviamos el correo de recuperación de contraseña
     const subject = 'Password Reset';
-    const text = `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\nPlease click on the following link, or paste this into your browser to complete the process within one hour of receiving it:\n\nhttp://localhost:3000/reset/${token}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.\n`;
+    const text = `You are receiving this because you (or someone else) 
+    have requested the reset of the password for your account.\n\nPlease click on 
+    the following link, or paste this into your browser to complete the process within 
+    one hour of receiving it:\n\nhttp://localhost:3000/reset/${token}\n\nIf you did not 
+    request this, please ignore this email and your password will remain unchanged.\n`;
     if (!user.email) {
       throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'No email found');
       return;
@@ -65,7 +69,7 @@ export class AuthService {
     await this.emailService.sendText(user.email, subject, text);
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
     try {
       const user = await this.userRepository.findOne({
         where: { resetPasswordToken: resetPasswordDto.token },
@@ -98,50 +102,31 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    let user: User | null;
     try {
-      user = await this.userRepository.findOne({
-        where: { email: loginDto?.email },
-      });
-    } catch (error) {
-      throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Database error');
-      return;
-    }
-
-    if (!user) {
-      throwHttpException(HttpStatus.UNAUTHORIZED, 'Correo no encontrado');
-      return;
-    }
-
-    if (user.password === undefined) {
-      throwHttpException(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        'La contraseña no está definida',
-      );
-      return;
-    }
-
-    try {
-      const passwordMatch = await compare(
-        loginDto.password ?? '',
-        user.password,
-      );
+      const { email, password } = loginDto;
+      const user = await this.userRepository.findOne({ where: { email } });
+  
+      if (!user) { throwHttpException(
+          HttpStatus.UNAUTHORIZED, 'Correo no encontrado'
+        )
+      ;}
+  
+      const passwordMatch = await compare(password ?? '', user?.password ?? '');
       if (!passwordMatch) {
-        throwHttpException(HttpStatus.UNAUTHORIZED, 'contraseña incorrecta');
-        return;
+        throwHttpException(
+          HttpStatus.UNAUTHORIZED, 'contraseña incorrecta'
+        );
       }
+  
+      const payload = { email: user?.email, id: user?.id };
+      const token = this.jwtService.sign(payload);
+  
+      return { access_token: token };
     } catch (error) {
       throwHttpException(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        'Error al comparar contraseñas',
+        HttpStatus.INTERNAL_SERVER_ERROR, 'Error al procesar la solicitud'
       );
-      return;
     }
-
-    const payload = { email: user.email, sub: user.id };
-    const token = this.jwtService.sign(payload);
-
-    return { access_token: token };
   }
 
   async register(registerDto: RegisterDto) {
@@ -158,9 +143,10 @@ export class AuthService {
       );
     }
 
-    // Encripta la contraseña
-    const hashedPassword = await hash(registerDto.password ?? '', 10);
-    registerDto.password = hashedPassword;
+    const { password } = registerDto;
+
+    const hashedPassword = await hash(password ?? '', 10);
+    registerDto = {...registerDto, password: hashedPassword};
 
     await this.connection.transaction(
       async (transactionalEntityManager: EntityManager): Promise<void> => {

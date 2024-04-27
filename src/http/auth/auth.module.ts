@@ -10,8 +10,8 @@ import { EmailService } from './email.service';
   imports: [
     TypeOrmModule.forFeature([User]),
     JwtModule.register({
-      secret: process.env.SECRET_JWT, // Cambia esto por tu propia clave secreta
-      signOptions: { expiresIn: '12h' }, // Opcional: especifica el tiempo de expiración del token
+      secret: process.env.SECRET_JWT, 
+      signOptions: { expiresIn: process.env.EXPIRES_JWT }, 
     }),
   ],
   controllers: [AuthController],
