@@ -1,11 +1,20 @@
-import { IsNotEmpty, IsUUID, Length } from "class-validator";
+import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class ResetPasswordDto {
-    @IsNotEmpty()
-    @IsUUID('4')
-    resetPasswordToken?: string;
+  @ApiProperty({
+    example: '1234567890abcdef',
+    description: 'Token de restablecimiento de contraseña',
+  })
+  @IsString()
+  @IsNotEmpty()
+  token?: string;
 
-    @IsNotEmpty()
-    @Length(6, 20) // ?
-    passqord?: string;
+  @ApiProperty({
+    example: 'newPassword123',
+    description: 'Nueva contraseña del usuario',
+  })
+  @IsString()
+  @IsNotEmpty()
+  newPassword?: string;
 }

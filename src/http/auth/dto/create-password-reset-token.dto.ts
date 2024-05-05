@@ -8,5 +8,5 @@ export class CreatePasswordResetTokenDto {
   })
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email?: string;
 }
