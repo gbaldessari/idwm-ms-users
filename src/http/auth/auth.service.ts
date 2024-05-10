@@ -13,7 +13,7 @@ import { compare } from 'bcrypt';
 import { hash } from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { differenceInMinutes } from 'date-fns';
-import { EmailService } from './email.service';
+import { EmailService } from './email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -46,7 +46,7 @@ export class AuthService {
 
     const token = randomBytes(20).toString('hex');
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour from now
+    user.resetPasswordExpires = new Date(Date.now() + 3600000);
 
     try {
       await this.userRepository.save(user);
@@ -55,18 +55,11 @@ export class AuthService {
       return;
     }
 
-    // Aquí es donde enviamos el correo de recuperación de contraseña
-    const subject = 'Password Reset';
-    const text = `You are receiving this because you (or someone else) 
-    have requested the reset of the password for your account.\n\nPlease click on 
-    the following link, or paste this into your browser to complete the process within 
-    one hour of receiving it:\n\nhttp://localhost:3000/reset/${token}\n\nIf you did not 
-    request this, please ignore this email and your password will remain unchanged.\n`;
     if (!user.email) {
       throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'No email found');
       return;
     }
-    await this.emailService.sendText(user.email, subject, text);
+    await this.emailService.sendUserRecovery(user);
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
@@ -102,7 +95,7 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    try {
+
       const { email, password } = loginDto;
       const user = await this.userRepository.findOne({ where: { email } });
   
@@ -110,8 +103,9 @@ export class AuthService {
           HttpStatus.UNAUTHORIZED, 'Correo no encontrado'
         )
       ;}
-  
+
       const passwordMatch = await compare(password ?? '', user?.password ?? '');
+
       if (!passwordMatch) {
         throwHttpException(
           HttpStatus.UNAUTHORIZED, 'contraseña incorrecta'
@@ -120,13 +114,9 @@ export class AuthService {
   
       const payload = { email: user?.email, id: user?.id };
       const token = this.jwtService.sign(payload);
-  
+
       return { access_token: token };
-    } catch (error) {
-      throwHttpException(
-        HttpStatus.INTERNAL_SERVER_ERROR, 'Error al procesar la solicitud'
-      );
-    }
+
   }
 
   async register(registerDto: RegisterDto) {

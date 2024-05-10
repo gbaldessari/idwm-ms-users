@@ -14,11 +14,13 @@ import {
 import { AuthModule } from './http/auth/auth.module';
 import { User } from './http/auth/entities/user.entity';
 import * as path from 'path';
+import { EmailModule } from './http/auth/email/email.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
       load: [baseConfig],
       validationSchema: configValidation,
     }),
@@ -64,6 +66,7 @@ import * as path from 'path';
       inject: [ConfigService],
     }),
     AuthModule,
+    EmailModule
   ],
   controllers: [AppController],
   providers: [AppService],

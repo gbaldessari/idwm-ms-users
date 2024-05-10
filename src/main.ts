@@ -12,7 +12,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('api')
     .build();
-
+  require('dotenv').config();
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('api', app, document);
   app.useGlobalPipes(new ValidationPipe());
