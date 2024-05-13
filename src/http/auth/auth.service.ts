@@ -29,6 +29,7 @@ export class AuthService {
   async createPasswordResetToken(
     @Body() createPasswordResetTokenDto: CreatePasswordResetTokenDto,
   ) {
+    console.log(createPasswordResetTokenDto);
     let user;
     try {
       user = await this.userRepository.findOne({
