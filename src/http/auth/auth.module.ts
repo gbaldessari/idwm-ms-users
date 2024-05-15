@@ -6,13 +6,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { EmailService } from './email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>('SECRET_JWT'),
         signOptions: { expiresIn: configService.get<string>('EXPIRES_JWT') },
         global: true
       }),
@@ -20,6 +21,6 @@ import { ConfigService } from '@nestjs/config';
   }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, EmailService],
+  providers: [AuthService, EmailService, JwtStrategy],
 })
 export class AuthModule {}

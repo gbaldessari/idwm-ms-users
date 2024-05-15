@@ -1,4 +1,4 @@
-import { Body, HttpStatus, Injectable } from '@nestjs/common';
+import { Body, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -25,6 +25,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
   ) {}
+
+  async findAll() {
+    return await this.userRepository.find();
+  }
 
   async createPasswordResetToken(
     @Body() createPasswordResetTokenDto: CreatePasswordResetTokenDto,
@@ -112,7 +116,7 @@ export class AuthService {
         );
       }
   
-      const payload = { email: user?.email, id: user?.id };
+      const payload = {id: user?.id  ,email: user?.email};
       const token = this.jwtService.sign(payload);
 
       return { access_token: token };
@@ -154,4 +158,16 @@ export class AuthService {
     );
     return { message: this.i18n.translate('http.SUCCESS_CREATED') };
   }
+
+  async verifyToken(token: string) {
+    console.log(process.env.SECRET_JWT);
+    console.log(token)
+    try {
+      const payload = await this.jwtService.verify(token);
+      return payload;
+    } catch (e) {
+      throw new UnauthorizedException('INVALID_TOKEN');
+    }
+  }
+
 }
