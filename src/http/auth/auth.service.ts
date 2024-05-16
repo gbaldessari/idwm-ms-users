@@ -117,7 +117,7 @@ export class AuthService {
       }
   
       const payload = {id: user?.id  ,email: user?.email};
-      const token = this.jwtService.sign(payload);
+      const token = await this.jwtService.signAsync(payload);
 
       return { access_token: token };
 
@@ -157,17 +157,6 @@ export class AuthService {
       },
     );
     return { message: this.i18n.translate('http.SUCCESS_CREATED') };
-  }
-
-  async verifyToken(token: string) {
-    console.log(process.env.SECRET_JWT);
-    console.log(token)
-    try {
-      const payload = await this.jwtService.verify(token);
-      return payload;
-    } catch (e) {
-      throw new UnauthorizedException('INVALID_TOKEN');
-    }
   }
 
 }

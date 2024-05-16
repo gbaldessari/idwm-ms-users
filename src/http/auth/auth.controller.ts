@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -74,8 +74,9 @@ export class AuthController {
   })
   @ApiResponse({ status: 201, description: 'Token verified'})
   @ApiResponse({ status: 400, description: 'Bad request' })
-  async verifyToken(@Body('token') token: string) {
-    return this.authService.verifyToken(token);
+  async verifyToken(@Request() req:any) {
+    console.log(req.user);
+    return await req.user;
   }
 
   @UseGuards(JwtAuthGuard)
