@@ -14,6 +14,7 @@ import { hash } from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { differenceInMinutes } from 'date-fns';
 import { EmailService } from './email/email.service';
+import { string } from 'joi';
 
 @Injectable()
 export class AuthService {
@@ -118,9 +119,9 @@ export class AuthService {
       }
   
       const payload = {id: user?.id  ,email: user?.email};
-      const token = await this.jwtService.signAsync(payload);
+      const access_token = await this.jwtService.signAsync(payload);
 
-      return { access_token: token };
+      return  access_token;
 
   }
 
