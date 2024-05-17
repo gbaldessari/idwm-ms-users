@@ -1,10 +1,11 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { CreatePasswordResetTokenDto } from './dto/create-password-reset-token.dto';
 import { ApiTags, ApiBody, ApiResponse, ApiOperation } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/http/auth/auth.guard';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -63,4 +64,31 @@ export class AuthController {
 
     return { message: 'Password reset successful' };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/verify-token')
+  @ApiOperation({ summary: 'Verify access token' })
+  @ApiBody({
+    type: String,
+    description: 'Access token to verify',
+  })
+  @ApiResponse({ status: 201, description: 'Token verified'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async verifyToken(@Request() req:any) {
+    console.log(req.user);
+    return await req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/get-users')
+  @ApiOperation({ summary: 'Return all users' })
+  @ApiBody({
+    description: 'Return all users',
+  })
+  @ApiResponse({ status: 201, description: 'Users returned'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async getUsers() {
+    return this.authService.findAll();
+  }
+
 }
