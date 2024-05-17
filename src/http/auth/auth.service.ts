@@ -50,7 +50,7 @@ export class AuthService {
       return;
     }
 
-    const token = randomBytes(20).toString('hex');
+    const token = randomBytes(6).toString('hex');
     user.resetPasswordToken = token;
     user.resetPasswordExpires = new Date(Date.now() + 3600000);
 
