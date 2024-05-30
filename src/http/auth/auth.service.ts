@@ -66,16 +66,9 @@ export class AuthService {
   async createPasswordResetToken(
     @Body() createPasswordResetTokenDto: CreatePasswordResetTokenDto,
   ) {
-    console.log(createPasswordResetTokenDto);
-    let user;
-    try {
-      user = await this.userRepository.findOne({
-        where: { email: createPasswordResetTokenDto.email },
-      });
-    } catch (error) {
-      throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Database error');
-      return;
-    }
+    const user = await this.userRepository.findOne({
+      where: { email: createPasswordResetTokenDto.email },
+    });
 
     if (!user) {
       throwHttpException(HttpStatus.NOT_FOUND, 'User not found');
@@ -97,7 +90,7 @@ export class AuthService {
       throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'No email found');
       return;
     }
-    await this.emailService.sendUserRecovery(user);
+    return await this.emailService.sendUserRecovery(user);
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
@@ -177,11 +170,7 @@ export class AuthService {
     const old = updatePasswordDto.oldPassword ?? '';
     const newP = await hash(updatePasswordDto.newPassword ?? '', 10);
 
-    console.log(old)
-    console.log(user.password)
     const matchOld = await compare(old ?? '', user.password ?? '');
-    console.log(matchOld)
-
     if (!matchOld) {
       return {
         data: null,
