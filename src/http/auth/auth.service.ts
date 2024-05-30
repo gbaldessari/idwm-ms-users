@@ -46,10 +46,8 @@ export class AuthService {
       if (user) {
         return {
           data: {
-            id: user.id,
             name: user.name,
             lastName: user.lastName,
-            email: user.email,
             birthdate: user.birthdate
           },
           message: 'Usuario encontrado',
