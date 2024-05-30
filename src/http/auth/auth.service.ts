@@ -2,8 +2,6 @@ import {
   Body, 
   HttpStatus, 
   Injectable, 
-  UnauthorizedException,
-  Headers 
 } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -168,8 +166,41 @@ export class AuthService {
     const id: number | any = payload['id'];
     const user = await this.userRepository.findOneBy({id});
     
-    
+    if (!user) {
+      return {
+        data: null,
+        message: 'Usuario no encontrado',
+        success: false
+      };
+    }
 
+    const old = updatePasswordDto.oldPassword ?? '';
+    const newP = await hash(updatePasswordDto.newPassword ?? '', 10);
+
+    console.log(old)
+    console.log(user.password)
+    const matchOld = await compare(old ?? '', user.password ?? '');
+    console.log(matchOld)
+
+    if (!matchOld) {
+      return {
+        data: null,
+        message: 'Contraseña antigua incorrecta',
+        success: false
+      };
+    }
+
+    const updatedUser: User = {
+      ...user,
+      password: newP
+    };
+    const update: User = await this.userRepository.save(updatedUser);
+
+    return {
+      data: update,
+      message: 'Contraseña actualizada',
+      success: true
+    };
   }
 
   async login(loginDto: LoginDto) {
