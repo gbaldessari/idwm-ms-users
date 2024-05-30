@@ -163,10 +163,14 @@ export class AuthService {
     };
   }
 
-  // async updatePassword(updatePasswordDto: UpdatePasswordDto) {
-
+  async updatePassword(token: string, updatePasswordDto: UpdatePasswordDto) {
+    const payload = this.jwtService.decode(token.replace('Bearer ', ''));
+    const id: number | any = payload['id'];
+    const user = await this.userRepository.findOneBy({id});
     
-  // }
+    
+
+  }
 
   async login(loginDto: LoginDto) {
 

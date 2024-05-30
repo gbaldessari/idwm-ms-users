@@ -7,6 +7,7 @@ import { CreatePasswordResetTokenDto } from './dto/create-password-reset-token.d
 import { ApiTags, ApiBody, ApiResponse, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/http/auth/auth.guard';
 import { UpdateDto } from './dto/update.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -81,17 +82,32 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Put('/update-user')
-  @ApiOperation({ summary: 'Return id user' })
+  @ApiOperation({ summary: 'Update user data' })
   @ApiBody({
-    description: 'Return id user of payload',
+    description: 'Update optional data user',
   })
-  @ApiResponse({ status: 201, description: 'Users returned'})
+  @ApiResponse({ status: 201, description: 'Users updated'})
   @ApiResponse({ status: 400, description: 'Bad request' })
   async updateUser(
     @Headers('Authorization') token: string,
     @Body() updateDto: UpdateDto
   ){
     return this.authService.updateUser(token, updateDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('/update-password')
+  @ApiOperation({ summary: 'Update user password' })
+  @ApiBody({
+    description: 'Update user password xd',
+  })
+  @ApiResponse({ status: 201, description: 'Users returned'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async updatePassword(
+    @Headers('Authorization') token: string,
+    @Body() updatePasswordDto: UpdatePasswordDto
+  ){
+    return this.authService.updatePassword(token, updatePasswordDto);
   }
 
   @UseGuards(JwtAuthGuard)
