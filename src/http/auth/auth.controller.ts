@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, Put, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { CreatePasswordResetTokenDto } from './dto/create-password-reset-token.dto';
 import { ApiTags, ApiBody, ApiResponse, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/http/auth/auth.guard';
+import { UpdateDto } from './dto/update.dto';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -75,8 +76,22 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Token verified'})
   @ApiResponse({ status: 400, description: 'Bad request' })
   async verifyToken(@Request() req:any) {
-    console.log(req.user);
-    return await req.user;
+    return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('/update-user')
+  @ApiOperation({ summary: 'Return id user' })
+  @ApiBody({
+    description: 'Return id user of payload',
+  })
+  @ApiResponse({ status: 201, description: 'Users returned'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async updateUser(
+    @Headers('Authorization') token: string,
+    @Body() updateDto: UpdateDto
+  ){
+    return this.authService.updateUser(token, updateDto);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -89,6 +104,18 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   async getUsers() {
     return this.authService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/get-user')
+  @ApiOperation({ summary: 'Return user' })
+  @ApiBody({
+    description: 'Return user by id',
+  })
+  @ApiResponse({ status: 201, description: 'User returned'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async getUser(@Headers('Authorization') token: string) {
+    return this.authService.findOne(token);
   }
 
 }

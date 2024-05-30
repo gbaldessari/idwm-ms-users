@@ -25,9 +25,12 @@ export class User {
 
   @Column()
   birthdate?: string;
-
+  
   @Column({ default: true })
   active?: boolean;
+  
+  @Column({default: false})
+  isAdmin?: boolean;
 
   @Column({ type: 'varchar', nullable: true })
   resetPasswordToken?: string;

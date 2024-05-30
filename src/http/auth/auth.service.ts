@@ -1,4 +1,10 @@
-import { Body, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { 
+  Body, 
+  HttpStatus, 
+  Injectable, 
+  UnauthorizedException,
+  Headers 
+} from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -14,7 +20,8 @@ import { hash } from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { differenceInMinutes } from 'date-fns';
 import { EmailService } from './email/email.service';
-import { string } from 'joi';
+import { UpdateDto } from './dto/update.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +36,33 @@ export class AuthService {
 
   async findAll() {
     return await this.userRepository.find();
+  }
+
+  async findOne(token: string) {
+    try {
+      const payload = this.jwtService.decode(token.replace('Bearer ', ''));
+      const id: number | any = payload['id'];
+      const user = await this.userRepository.findOneBy({id});
+      if (user) {
+        return {
+          data: {
+            id: user.id,
+            name: user.name,
+            lastName: user.lastName,
+            email: user.email,
+            birthdate: user.birthdate
+          },
+          message: 'Usuario encontrado',
+          success: true
+        };
+      }
+    } catch (e) {
+      return {
+        data: null,
+        message: 'Usuario no encontrado',
+        success: false
+      };
+    }
   }
 
   async createPasswordResetToken(
@@ -100,6 +134,40 @@ export class AuthService {
     }
   }
 
+  async updateUser(token: string, updateDto: UpdateDto) {
+    const payload = this.jwtService.decode(token.replace('Bearer ', ''));
+    const id: number | any = payload['id'];
+    const user = await this.userRepository.findOneBy({id});
+
+    if (!user) {
+      return {
+        data: null,
+        message: 'Usuario no encontrado',
+        success: false
+      };
+    }
+    
+    const updatedUser: User = {
+      ...user,
+      name: updateDto?.name ?? user.name,
+      lastName: updateDto?.lastName ?? user.lastName,
+      birthdate: updateDto?.birthdate ?? user.birthdate
+    };
+
+    const update: User = await this.userRepository.save(updatedUser);
+
+    return {
+      data: update,
+      message: 'Usuario actualizado',
+      success: true
+    };
+  }
+
+  // async updatePassword(updatePasswordDto: UpdatePasswordDto) {
+
+    
+  // }
+
   async login(loginDto: LoginDto) {
 
       const { email, password } = loginDto;
@@ -160,5 +228,4 @@ export class AuthService {
     );
     return { message: this.i18n.translate('http.SUCCESS_CREATED') };
   }
-
 }
