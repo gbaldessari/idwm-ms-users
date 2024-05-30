@@ -36,7 +36,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+    try {
+      return this.authService.login(loginDto);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
   @UseGuards(JwtAuthGuard)
