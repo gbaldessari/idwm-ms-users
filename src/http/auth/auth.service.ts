@@ -2,8 +2,6 @@ import {
   Body, 
   HttpStatus, 
   Injectable, 
-  UnauthorizedException,
-  Headers 
 } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -66,16 +64,9 @@ export class AuthService {
   async createPasswordResetToken(
     @Body() createPasswordResetTokenDto: CreatePasswordResetTokenDto,
   ) {
-    console.log(createPasswordResetTokenDto);
-    let user;
-    try {
-      user = await this.userRepository.findOne({
-        where: { email: createPasswordResetTokenDto.email },
-      });
-    } catch (error) {
-      throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Database error');
-      return;
-    }
+    const user = await this.userRepository.findOne({
+      where: { email: createPasswordResetTokenDto.email },
+    });
 
     if (!user) {
       throwHttpException(HttpStatus.NOT_FOUND, 'User not found');
@@ -97,7 +88,7 @@ export class AuthService {
       throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'No email found');
       return;
     }
-    await this.emailService.sendUserRecovery(user);
+    return await this.emailService.sendUserRecovery(user);
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
@@ -166,8 +157,37 @@ export class AuthService {
     const id: number | any = payload['id'];
     const user = await this.userRepository.findOneBy({id});
     
-    
+    if (!user) {
+      return {
+        data: null,
+        message: 'Usuario no encontrado',
+        success: false
+      };
+    }
 
+    const old = updatePasswordDto.oldPassword ?? '';
+    const newP = await hash(updatePasswordDto.newPassword ?? '', 10);
+
+    const matchOld = await compare(old ?? '', user.password ?? '');
+    if (!matchOld) {
+      return {
+        data: null,
+        message: 'Contraseña antigua incorrecta',
+        success: false
+      };
+    }
+
+    const updatedUser: User = {
+      ...user,
+      password: newP
+    };
+    const update: User = await this.userRepository.save(updatedUser);
+
+    return {
+      data: update,
+      message: 'Contraseña actualizada',
+      success: true
+    };
   }
 
   async login(loginDto: LoginDto) {
@@ -188,7 +208,7 @@ export class AuthService {
         );
       }
   
-      const payload = {id: user?.id  ,email: user?.email};
+      const payload = {id: user?.id  ,email: user?.email, isAdmin: user?.isAdmin};
       const access_token = await this.jwtService.signAsync(payload);
 
       return {token: access_token};
@@ -229,5 +249,69 @@ export class AuthService {
       },
     );
     return { message: this.i18n.translate('http.SUCCESS_CREATED') };
+  }
+
+  async findWorkers(token: string){
+    const payload = this.jwtService.decode(token.replace('Bearer ', ''));
+    const id: number | any = payload['id'];
+    const user = await this.userRepository.findOneBy({id});
+
+    if (!user) {
+      return {
+        data: null,
+        message: 'Usuario no encontrado',
+        success: false
+      };
+    }
+
+    if (user.isAdmin !== 2) {
+      return {
+        data: null,
+        message: 'Usuario no autorizado',
+        success: false
+      };
+    }
+  
+    const workers = await this.userRepository.find({where: {isAdmin: 2}});
+
+    return {
+      data: workers,
+      message: 'Usuarios encontrados',
+      success: true
+    };
+  }
+
+  async addAdmin(token: string, id: number) {
+    const payload = this.jwtService.decode(token.replace('Bearer ', ''));
+    const idAdmin: number | any = payload['id'];
+    const admin = await this.userRepository.findOneBy({id: idAdmin});
+    if (!admin) {
+      return {
+        data: null,
+        message: 'Usuario no encontrado',
+        success: false
+      };
+    }
+    if (admin.isAdmin !== 0) {
+      return {
+        data: null,
+        message: 'Usuario no autorizado',
+        success: false
+      };
+    }
+
+    const newAdmin = await this.userRepository.findOneBy({id});
+    const updateAdmin = {
+      ...newAdmin,
+      isAdmin: 1
+    };
+
+    const update: User = await this.userRepository.save(updateAdmin);
+
+    return {
+      data: update,
+      message: 'Usuario actualizado',
+      success: true
+    };
   }
 }

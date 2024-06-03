@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request, Put, Headers } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, Put, Headers, Header } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -23,7 +23,11 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'User successfully registered' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+    try {
+      return this.authService.register(registerDto);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
   @Post('/login')
@@ -32,9 +36,14 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+    try {
+      return this.authService.login(loginDto);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('/create-password-reset-token')
   @ApiOperation({ summary: 'Create password reset token' })
   @ApiBody({
@@ -46,14 +55,17 @@ export class AuthController {
   async createPasswordResetToken(
     @Body() createPasswordResetTokenDto: CreatePasswordResetTokenDto,
   ) {
-    await this.authService.createPasswordResetToken(
-      createPasswordResetTokenDto,
-    );
-
-    return { message: 'Password reset email sent' };
+    try {
+      return await this.authService.createPasswordResetToken(
+        createPasswordResetTokenDto
+      );
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
-  @Post('/password-reset')
+  @UseGuards(JwtAuthGuard)
+  @Put('/password-reset')
   @ApiOperation({ summary: 'Reset user password' })
   @ApiBody({
     type: ResetPasswordDto,
@@ -62,9 +74,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password reset successful' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    await this.authService.resetPassword(resetPasswordDto);
-
-    return { message: 'Password reset successful' };
+    try {
+      await this.authService.resetPassword(resetPasswordDto);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -84,7 +98,8 @@ export class AuthController {
   @Put('/update-user')
   @ApiOperation({ summary: 'Update user data' })
   @ApiBody({
-    description: 'Update optional data user',
+    type: UpdateDto,
+    description: 'Optional data to update user data',
   })
   @ApiResponse({ status: 201, description: 'Users updated'})
   @ApiResponse({ status: 400, description: 'Bad request' })
@@ -92,14 +107,19 @@ export class AuthController {
     @Headers('Authorization') token: string,
     @Body() updateDto: UpdateDto
   ){
-    return this.authService.updateUser(token, updateDto);
+    try {
+      return this.authService.updateUser(token, updateDto);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('/update-password')
   @ApiOperation({ summary: 'Update user password' })
   @ApiBody({
-    description: 'Update user password xd',
+    type: UpdatePasswordDto,
+    description: 'Data to update user password',
   })
   @ApiResponse({ status: 201, description: 'Users returned'})
   @ApiResponse({ status: 400, description: 'Bad request' })
@@ -107,31 +127,62 @@ export class AuthController {
     @Headers('Authorization') token: string,
     @Body() updatePasswordDto: UpdatePasswordDto
   ){
-    return this.authService.updatePassword(token, updatePasswordDto);
+    try {
+      return this.authService.updatePassword(token, updatePasswordDto);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/get-users')
   @ApiOperation({ summary: 'Return all users' })
-  @ApiBody({
-    description: 'Return all users',
-  })
   @ApiResponse({ status: 201, description: 'Users returned'})
   @ApiResponse({ status: 400, description: 'Bad request' })
   async getUsers() {
-    return this.authService.findAll();
+    try {
+      return this.authService.findAll();
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/get-user')
   @ApiOperation({ summary: 'Return user' })
-  @ApiBody({
-    description: 'Return user by id',
-  })
   @ApiResponse({ status: 201, description: 'User returned'})
   @ApiResponse({ status: 400, description: 'Bad request' })
   async getUser(@Headers('Authorization') token: string) {
-    return this.authService.findOne(token);
+    try {
+      return this.authService.findOne(token);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('get-workers')
+  @ApiOperation({ summary: 'Return all workers' })
+  @ApiResponse({ status: 201, description: 'Workers returned'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async getWorkers(@Headers('Authorization') token: string) {
+    try {
+      return this.authService.findWorkers(token);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('add-admin')
+  @ApiOperation({ summary: 'Add admin' })
+  @ApiResponse({ status: 201, description: 'Admin added'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async addAdmin(@Headers('Authorization') token: string, @Body() id: number){
+    try {
+      return this.authService.addAdmin(token, id);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
+  }
 }
