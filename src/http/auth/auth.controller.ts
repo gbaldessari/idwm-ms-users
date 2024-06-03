@@ -43,7 +43,6 @@ export class AuthController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('/create-password-reset-token')
   @ApiOperation({ summary: 'Create password reset token' })
   @ApiBody({
@@ -64,8 +63,7 @@ export class AuthController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Put('/password-reset')
+  @Post('/password-reset')
   @ApiOperation({ summary: 'Reset user password' })
   @ApiBody({
     type: ResetPasswordDto,
