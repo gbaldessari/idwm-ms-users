@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request, Put, Headers } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, Put, Headers, Header } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -160,4 +160,29 @@ export class AuthController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('get-workers')
+  @ApiOperation({ summary: 'Return all workers' })
+  @ApiResponse({ status: 201, description: 'Workers returned'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async getWorkers(@Headers('Authorization') token: string) {
+    try {
+      return this.authService.findWorkers(token);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('add-admin')
+  @ApiOperation({ summary: 'Add admin' })
+  @ApiResponse({ status: 201, description: 'Admin added'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async addAdmin(@Headers('Authorization') token: string, @Body() id: number){
+    try {
+      return this.authService.addAdmin(token, id);
+    } catch(e) {
+      throw new Error("INTERNAL_SERVER_ERROR");
+    }
+  }
 }

@@ -29,8 +29,8 @@ export class User {
   @Column({ default: true })
   active?: boolean;
   
-  @Column({default: false})
-  isAdmin?: boolean;
+  @Column({default: 2})
+  isAdmin?: number;
 
   @Column({ type: 'varchar', nullable: true })
   resetPasswordToken?: string;
