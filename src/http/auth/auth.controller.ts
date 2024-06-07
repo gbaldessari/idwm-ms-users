@@ -159,20 +159,24 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('get-workers')
+  @Get('/get-workers')
   @ApiOperation({ summary: 'Return all workers' })
   @ApiResponse({ status: 201, description: 'Workers returned'})
   @ApiResponse({ status: 400, description: 'Bad request' })
   async getWorkers(@Headers('Authorization') token: string) {
     try {
-      return this.authService.findWorkers(token);
-    } catch(e) {
+      console.log('Fetching workers with token:', token);
+      const result = await this.authService.findWorkers(token);
+      console.log('Workers fetched successfully:', result);
+      return result;
+    } catch (e) {
+      console.error('Error fetching workers:', e);
       throw new Error("INTERNAL_SERVER_ERROR");
     }
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('add-admin')
+  @Post('/add-admin')
   @ApiOperation({ summary: 'Add admin' })
   @ApiResponse({ status: 201, description: 'Admin added'})
   @ApiResponse({ status: 400, description: 'Bad request' })

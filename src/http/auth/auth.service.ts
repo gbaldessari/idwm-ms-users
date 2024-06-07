@@ -254,32 +254,36 @@ export class AuthService {
   async findWorkers(token: string){
     const payload = this.jwtService.decode(token.replace('Bearer ', ''));
     const id: number | any = payload['id'];
+    console.log('Decoded payload:', payload); // Registro del payload decodificado
     const user = await this.userRepository.findOneBy({id});
 
     if (!user) {
-      return {
-        data: null,
-        message: 'Usuario no encontrado',
-        success: false
-      };
+        console.log('User not found for ID:', id); // Registro cuando no se encuentra el usuario
+        return {
+            data: null,
+            message: 'Usuario no encontrado',
+            success: false
+        };
     }
 
-    if (user.isAdmin !== 2) {
-      return {
-        data: null,
-        message: 'Usuario no autorizado',
-        success: false
-      };
+    if (user.isAdmin === 3) {
+        console.log('User is not authorized:', user); // Registro cuando el usuario no está autorizado
+        return {
+            data: null,
+            message: 'Usuario no autorizado',
+            success: false
+        };
     }
-  
-    const workers = await this.userRepository.find({where: {isAdmin: 2}});
+
+    const workers = await this.userRepository.find({where: {isAdmin: 3||2}});
+    console.log('Workers found:', workers); // Registro de los trabajadores encontrados
 
     return {
-      data: workers,
-      message: 'Usuarios encontrados',
-      success: true
+        data: workers,
+        message: 'Usuarios encontrados',
+        success: true
     };
-  }
+}
 
   async addAdmin(token: string, id: number) {
     const payload = this.jwtService.decode(token.replace('Bearer ', ''));
@@ -292,7 +296,7 @@ export class AuthService {
         success: false
       };
     }
-    if (admin.isAdmin !== 0) {
+    if (admin.isAdmin !== 1) {
       return {
         data: null,
         message: 'Usuario no autorizado',
