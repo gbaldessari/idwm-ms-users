@@ -7,22 +7,29 @@ export class EmailService {
     constructor(private mailerService: MailerService) {}
 
     async sendUserRecovery(user: User) {
-        const code = `${user.resetPasswordToken}`;
-        await this.mailerService.sendMail({
-            to: user.email,
-            from: '"Equipo de soporte" <support@example.com>', 
-            subject: 'Recuperación de contraseña',
-            html: `<h1>Hey ${user.email},</h1>
-            <h2>Usa el siguiente codigo para reestrablecer tu contrasena</h2>
-            <p>
-                ${ code }
-            </p>
-            <i>Si tu no pediste este codigo, puedes ignorarlo.</i>`,
-            context: {  
-                names: user.email,
-                code: code,
-            },
-        });
-        return { message: 'Correo enviado'}
+        try{
+            if (!user) {
+                throw new Error("USER_NOT_FOUND");
+            }
+            const code = `${user.resetPasswordToken}`;
+            await this.mailerService.sendMail({
+                to: user.email,
+                from: '"Equipo de soporte" <support@example.com>', 
+                subject: 'Recuperación de contraseña',
+                html: `<h1>Hey ${user.email},</h1>
+                <h2>Usa el siguiente codigo para reestrablecer tu contrasena</h2>
+                <p>
+                    ${ code }
+                </p>
+                <i>Si tu no pediste este codigo, puedes ignorarlo.</i>`,
+                context: {  
+                    names: user.email,
+                    code: code,
+                },
+            });
+            return { message: 'Email sent successfully', success: true }
+        } catch (e) {
+            return { message: 'Error sending email', success: false }
+        }
     }
 }

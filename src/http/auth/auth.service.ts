@@ -9,7 +9,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { CreatePasswordResetTokenDto } from './dto/create-password-reset-token.dto';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Connection, EntityManager, Repository } from 'typeorm';
+import { Connection, EntityManager, In, Repository } from 'typeorm';
 import { throwHttpException } from 'src/utils/exception';
 import { I18nService } from 'nestjs-i18n';
 import { JwtService } from '@nestjs/jwt';
@@ -32,12 +32,11 @@ export class AuthService {
     private readonly emailService: EmailService,
   ) {}
 
-  async findAll() {
-    return await this.userRepository.find();
-  }
-
   async findOne(token: string) {
     try {
+      if (!token) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 'Token is required');
+      }
       const payload = this.jwtService.decode(token.replace('Bearer ', ''));
       const id: number | any = payload['id'];
       const user = await this.userRepository.findOneBy({id});
@@ -48,14 +47,14 @@ export class AuthService {
             lastName: user.lastName,
             birthdate: user.birthdate
           },
-          message: 'Usuario encontrado',
+          message: 'User found',
           success: true
         };
       }
     } catch (e) {
       return {
         data: null,
-        message: 'Usuario no encontrado',
+        message: 'User not found',
         success: false
       };
     }
@@ -64,6 +63,16 @@ export class AuthService {
   async createPasswordResetToken(
     @Body() createPasswordResetTokenDto: CreatePasswordResetTokenDto,
   ) {
+    const { email } = createPasswordResetTokenDto;
+
+    if (!email) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Email is required');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email || '')) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Invalid email');
+    }
+
     const user = await this.userRepository.findOne({
       where: { email: createPasswordResetTokenDto.email },
     });
@@ -71,6 +80,11 @@ export class AuthService {
     if (!user) {
       throwHttpException(HttpStatus.NOT_FOUND, 'User not found');
       return;
+    }
+
+    const sendMail = await this.emailService.sendUserRecovery(user);
+    if (!sendMail.success) {
+      throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Error sending email');
     }
 
     const token = randomBytes(6).toString('hex');
@@ -81,18 +95,27 @@ export class AuthService {
       await this.userRepository.save(user);
     } catch (error) {
       throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Error saving user');
-      return;
     }
 
-    if (!user.email) {
-      throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'No email found');
-      return;
-    }
-    return await this.emailService.sendUserRecovery(user);
+    return sendMail;
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     try {
+      const { newPassword, token } = resetPasswordDto;
+
+      if (!newPassword) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 'New password is required');
+      }
+      if ((newPassword ?? '').length < 8) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 
+          'New password must be at least 8 characters long');
+      }
+
+      if (!token) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 'Token is required');
+      }
+
       const user = await this.userRepository.findOne({
         where: { resetPasswordToken: resetPasswordDto.token },
       });
@@ -102,14 +125,13 @@ export class AuthService {
       }
 
       if (
-        user &&
-        user.resetPasswordExpires &&
+        user && user.resetPasswordExpires &&
         differenceInMinutes(new Date(), user.resetPasswordExpires) > 0
       ) {
         throwHttpException(HttpStatus.BAD_REQUEST, 'Token expired');
       }
       if (user) {
-        user.password = await hash(resetPasswordDto.newPassword ?? '', 10);
+        user.password = await hash(newPassword ?? '', 10);
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
 
@@ -124,6 +146,28 @@ export class AuthService {
   }
 
   async updateUser(token: string, updateDto: UpdateDto) {
+    const { name, lastName, birthdate } = updateDto;
+
+    if (!name) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Name is required');
+    }
+
+    if (!lastName) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Last name is required');
+    }
+
+    const birthdateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[012])\/(19|20)\d\d$/;
+    if (!birthdateRegex.test(birthdate || '')) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 
+        'Invalid birthdate format, should be dd/MM/yyyy');
+    }
+
+    const [day, month, year] = (birthdate ?? '').split('/');
+    const birthDateObj = new Date(`${year}-${month}-${day}`);
+    if (birthDateObj.toString() === 'Invalid Date') {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Invalid birthdate');
+    }
+
     const payload = this.jwtService.decode(token.replace('Bearer ', ''));
     const id: number | any = payload['id'];
     const user = await this.userRepository.findOneBy({id});
@@ -131,7 +175,7 @@ export class AuthService {
     if (!user) {
       return {
         data: null,
-        message: 'Usuario no encontrado',
+        message: 'User not found',
         success: false
       };
     }
@@ -147,12 +191,28 @@ export class AuthService {
 
     return {
       data: update,
-      message: 'Usuario actualizado',
+      message: 'User updated',
       success: true
     };
   }
 
   async updatePassword(token: string, updatePasswordDto: UpdatePasswordDto) {
+    const { oldPassword, newPassword } = updatePasswordDto;
+    if (!oldPassword) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Old password is required');
+    }
+    if ((oldPassword ?? '').length < 8) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 
+        'Old password must be at least 8 characters long');
+    }
+    if (!newPassword) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'New password is required');
+    }
+    if ((newPassword ?? '').length < 8) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 
+        'New password must be at least 8 characters long');
+    }
+
     const payload = this.jwtService.decode(token.replace('Bearer ', ''));
     const id: number | any = payload['id'];
     const user = await this.userRepository.findOneBy({id});
@@ -160,19 +220,19 @@ export class AuthService {
     if (!user) {
       return {
         data: null,
-        message: 'Usuario no encontrado',
+        message: 'User not found',
         success: false
       };
     }
 
-    const old = updatePasswordDto.oldPassword ?? '';
-    const newP = await hash(updatePasswordDto.newPassword ?? '', 10);
+    const old = oldPassword ?? '';
+    const newP = await hash(newPassword ?? '', 10);
 
     const matchOld = await compare(old ?? '', user.password ?? '');
     if (!matchOld) {
       return {
         data: null,
-        message: 'Contraseña antigua incorrecta',
+        message: 'Incorrect old password',
         success: false
       };
     }
@@ -185,18 +245,34 @@ export class AuthService {
 
     return {
       data: update,
-      message: 'Contraseña actualizada',
+      message: 'Password updated',
       success: true
     };
   }
 
   async login(loginDto: LoginDto) {
-
       const { email, password } = loginDto;
+
+      if (!email) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 'Email is required');
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email || '')) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 'Invalid email');
+      }
+      
+      if (!password) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 'Password is required');
+      }
+      if ((password ?? '').length < 8) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 
+          'Password must be at least 8 characters long');
+      }
+
       const user = await this.userRepository.findOne({ where: { email } });
   
       if (!user) { throwHttpException(
-          HttpStatus.UNAUTHORIZED, 'Correo no encontrado'
+          HttpStatus.UNAUTHORIZED, 'Email not found'
         )
       ;}
 
@@ -204,7 +280,7 @@ export class AuthService {
 
       if (!passwordMatch) {
         throwHttpException(
-          HttpStatus.UNAUTHORIZED, 'contraseña incorrecta'
+          HttpStatus.UNAUTHORIZED, 'Password does not match'
         );
       }
   
@@ -212,10 +288,48 @@ export class AuthService {
       const access_token = await this.jwtService.signAsync(payload);
 
       return {token: access_token};
-
   }
 
   async register(registerDto: RegisterDto) {
+    const { name, lastName, password, email, birthdate } = registerDto;
+
+    if (!name) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Name is required');
+    }
+
+    if (!lastName) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Last name is required');
+    }
+
+    if (!email) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Email is required');
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email || '')) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Invalid email');
+    }
+    
+    if (!password) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Password is required');
+    }
+    if (password !== undefined && password.length < 8) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 
+        'Password must be at least 8 characters long');
+    }
+
+    const birthdateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[012])\/(19|20)\d\d$/;
+    if (!birthdateRegex.test(birthdate || '')) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 
+        'Invalid birthdate format, should be dd/MM/yyyy');
+    }
+
+    const [day, month, year] = (birthdate ?? '').split('/');
+    const birthDateObj = new Date(`${year}-${month}-${day}`);
+    if (birthDateObj.toString() === 'Invalid Date') {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Invalid birthdate');
+    }
+
     const exist = await this.userRepository.findOne({
       where: {
         email: registerDto?.email,
@@ -228,8 +342,6 @@ export class AuthService {
         await this.i18n.translate('http.DUPLICATED'),
       );
     }
-
-    const { password } = registerDto;
 
     const hashedPassword = await hash(password ?? '', 10);
     registerDto = {...registerDto, password: hashedPassword};
@@ -252,59 +364,82 @@ export class AuthService {
   }
 
   async findWorkers(token: string){
+    if (!token) {
+        throwHttpException(HttpStatus.BAD_REQUEST, 'Token is required');
+    }
     const payload = this.jwtService.decode(token.replace('Bearer ', ''));
     const id: number | any = payload['id'];
-    console.log('Decoded payload:', payload); // Registro del payload decodificado
     const user = await this.userRepository.findOneBy({id});
 
     if (!user) {
-        console.log('User not found for ID:', id); // Registro cuando no se encuentra el usuario
         return {
             data: null,
-            message: 'Usuario no encontrado',
+            message: 'User not found',
             success: false
         };
     }
 
     if (user.isAdmin === 3) {
-        console.log('User is not authorized:', user); // Registro cuando el usuario no está autorizado
         return {
             data: null,
-            message: 'Usuario no autorizado',
+            message: 'User not authorized',
             success: false
         };
     }
 
-    const workers = await this.userRepository.find({where: {isAdmin: 3||2}});
-    console.log('Workers found:', workers); // Registro de los trabajadores encontrados
+    const workers = await this.userRepository.find({
+      where: { 
+        isAdmin: In([2, 3])
+      },
+      select: [
+        'id', 
+        'name', 
+        'lastName', 
+        'email', 
+        'birthdate', 
+        'isAdmin'] 
+    });
 
     return {
         data: workers,
-        message: 'Usuarios encontrados',
+        message: 'Workers found',
         success: true
     };
 }
 
   async addAdmin(token: string, id: number) {
+    if (!token) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Token is required');
+    }
+    if (!id) {
+      throwHttpException(HttpStatus.BAD_REQUEST, 'Id is required');
+    }
     const payload = this.jwtService.decode(token.replace('Bearer ', ''));
     const idAdmin: number | any = payload['id'];
     const admin = await this.userRepository.findOneBy({id: idAdmin});
     if (!admin) {
       return {
         data: null,
-        message: 'Usuario no encontrado',
+        message: 'User not found',
         success: false
       };
     }
     if (admin.isAdmin !== 1) {
       return {
         data: null,
-        message: 'Usuario no autorizado',
+        message: 'User not authorized',
         success: false
       };
     }
 
     const newAdmin = await this.userRepository.findOneBy({id});
+    if (!newAdmin) {
+      return {
+        data: null,
+        message: 'Worker not found',
+        success: false
+      };
+    }
     const updateAdmin = {
       ...newAdmin,
       isAdmin: 1
@@ -314,7 +449,7 @@ export class AuthService {
 
     return {
       data: update,
-      message: 'Usuario actualizado',
+      message: 'User updated',
       success: true
     };
   }

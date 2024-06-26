@@ -1,11 +1,20 @@
-import { Controller, Post, Body, UseGuards, Get, Request, Put, Headers, Header } from '@nestjs/common';
+import { 
+  Controller, 
+  Post, 
+  Body, 
+  UseGuards, 
+  Get, 
+  Request, 
+  Put, 
+  Headers
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { CreatePasswordResetTokenDto } from './dto/create-password-reset-token.dto';
 import { ApiTags, ApiBody, ApiResponse, ApiOperation } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/http/auth/auth.guard';
+import { JwtAuthGuard } from 'src/http/auth/guard/auth.guard';
 import { UpdateDto } from './dto/update.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 
@@ -133,19 +142,6 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('/get-users')
-  @ApiOperation({ summary: 'Return all users' })
-  @ApiResponse({ status: 201, description: 'Users returned'})
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  async getUsers() {
-    try {
-      return this.authService.findAll();
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Get('/get-user')
   @ApiOperation({ summary: 'Return user' })
   @ApiResponse({ status: 201, description: 'User returned'})
@@ -165,12 +161,9 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   async getWorkers(@Headers('Authorization') token: string) {
     try {
-      console.log('Fetching workers with token:', token);
       const result = await this.authService.findWorkers(token);
-      console.log('Workers fetched successfully:', result);
       return result;
     } catch (e) {
-      console.error('Error fetching workers:', e);
       throw new Error("INTERNAL_SERVER_ERROR");
     }
   }

@@ -31,7 +31,7 @@ export class RegisterDto {
 
   @ApiProperty({
     description: 'La fecha de nacimiento del usuario',
-    example: '1990-01-01',
+    example: '15/01/1990',
   })
   @IsString()
   @IsNotEmpty()

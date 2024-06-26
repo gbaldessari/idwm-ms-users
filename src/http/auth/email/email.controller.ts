@@ -10,6 +10,10 @@ export class EmailController {
 
     @Post('sendUserRecovery')
     sendUserRecovery(@Body() user: User) {
-        return this.emailService.sendUserRecovery(user);
+        try {
+            return this.emailService.sendUserRecovery(user);
+        } catch (e) {
+            throw new Error("INTERNAL_SERVER_ERROR");
+        }
     }
 }

@@ -11,19 +11,19 @@ export class User {
   @PrimaryGeneratedColumn({ unsigned: true })
   id?: number;
 
-  @Column()
+  @Column({ nullable: false })
   name?: string;
 
-  @Column()
+  @Column({ nullable: false })
   lastName?: string;
 
   @Column({ unique: true })
   email?: string;
 
-  @Column()
+  @Column({ nullable: false })
   password?: string;
 
-  @Column()
+  @Column({ nullable: false })
   birthdate?: string;
   
   @Column({ default: true })
