@@ -6,14 +6,22 @@ import {
   Get, 
   Request, 
   Put, 
-  Headers
+  Headers 
 } from '@nestjs/common';
+import { 
+  ApiTags, 
+  ApiBody, 
+  ApiResponse, 
+  ApiOperation, 
+  ApiHeader 
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { LoginDto } from './dto/login.dto';
-import { CreatePasswordResetTokenDto } from './dto/create-password-reset-token.dto';
-import { ApiTags, ApiBody, ApiResponse, ApiOperation } from '@nestjs/swagger';
+import { 
+  CreatePasswordResetTokenDto 
+} from './dto/create-password-reset-token.dto';
 import { JwtAuthGuard } from 'src/http/auth/guard/auth.guard';
 import { UpdateDto } from './dto/update.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
@@ -34,8 +42,8 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto) {
     try {
       return this.authService.register(registerDto);
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+    } catch (e) {
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 
@@ -47,8 +55,8 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     try {
       return this.authService.login(loginDto);
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+    } catch (e) {
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 
@@ -65,10 +73,10 @@ export class AuthController {
   ) {
     try {
       return await this.authService.createPasswordResetToken(
-        createPasswordResetTokenDto
+        createPasswordResetTokenDto,
       );
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+    } catch (e) {
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 
@@ -83,21 +91,18 @@ export class AuthController {
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     try {
       await this.authService.resetPassword(resetPasswordDto);
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+    } catch (e) {
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('/verify-token')
   @ApiOperation({ summary: 'Verify access token' })
-  @ApiBody({
-    type: String,
-    description: 'Access token to verify',
-  })
-  @ApiResponse({ status: 201, description: 'Token verified'})
+  @ApiHeader({ name: 'Authorization', description: 'Bearer token' })
+  @ApiResponse({ status: 200, description: 'Token verified' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  async verifyToken(@Request() req:any) {
+  async verifyToken(@Request() req: any) {
     return req.user;
   }
 
@@ -108,16 +113,17 @@ export class AuthController {
     type: UpdateDto,
     description: 'Optional data to update user data',
   })
-  @ApiResponse({ status: 201, description: 'Users updated'})
+  @ApiHeader({ name: 'Authorization', description: 'Bearer token' })
+  @ApiResponse({ status: 200, description: 'User updated' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async updateUser(
     @Headers('Authorization') token: string,
-    @Body() updateDto: UpdateDto
-  ){
+    @Body() updateDto: UpdateDto,
+  ) {
     try {
       return this.authService.updateUser(token, updateDto);
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+    } catch (e) {
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 
@@ -128,56 +134,70 @@ export class AuthController {
     type: UpdatePasswordDto,
     description: 'Data to update user password',
   })
-  @ApiResponse({ status: 201, description: 'Users returned'})
+  @ApiHeader({ name: 'Authorization', description: 'Bearer token' })
+  @ApiResponse({ status: 200, description: 'Password updated' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async updatePassword(
     @Headers('Authorization') token: string,
-    @Body() updatePasswordDto: UpdatePasswordDto
-  ){
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
     try {
-      return this.authService.updatePassword(token, updatePasswordDto);
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+      return this.authService.updatePassword(
+        token, 
+        updatePasswordDto
+      );
+    } catch (e) {
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/get-user')
   @ApiOperation({ summary: 'Return user' })
-  @ApiResponse({ status: 201, description: 'User returned'})
+  @ApiHeader({ name: 'Authorization', description: 'Bearer token' })
+  @ApiResponse({ status: 200, description: 'User returned' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async getUser(@Headers('Authorization') token: string) {
     try {
       return this.authService.findOne(token);
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+    } catch (e) {
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/get-workers')
   @ApiOperation({ summary: 'Return all workers' })
-  @ApiResponse({ status: 201, description: 'Workers returned'})
+  @ApiHeader({ name: 'Authorization', description: 'Bearer token' })
+  @ApiResponse({ status: 200, description: 'Workers returned' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async getWorkers(@Headers('Authorization') token: string) {
     try {
       const result = await this.authService.findWorkers(token);
       return result;
     } catch (e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('/add-admin')
   @ApiOperation({ summary: 'Add admin' })
-  @ApiResponse({ status: 201, description: 'Admin added'})
+  @ApiHeader({ name: 'Authorization', description: 'Bearer token' })
+  @ApiBody({
+    type: Number,
+    description: 'ID of the user to be added as admin',
+  })
+  @ApiResponse({ status: 200, description: 'Admin added' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  async addAdmin(@Headers('Authorization') token: string, @Body() id: number){
+  async addAdmin(
+    @Headers('Authorization') token: string, 
+    @Body() id: number
+  ) {
     try {
       return this.authService.addAdmin(token, id);
-    } catch(e) {
-      throw new Error("INTERNAL_SERVER_ERROR");
+    } catch (e) {
+      throw new Error('INTERNAL_SERVER_ERROR');
     }
   }
 }
