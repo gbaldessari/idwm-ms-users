@@ -82,11 +82,6 @@ export class AuthService {
       return;
     }
 
-    const sendMail = await this.emailService.sendUserRecovery(user);
-    if (!sendMail.success) {
-      throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Error sending email');
-    }
-
     const token = randomBytes(6).toString('hex');
     user.resetPasswordToken = token;
     user.resetPasswordExpires = new Date(Date.now() + 3600000);
@@ -95,6 +90,11 @@ export class AuthService {
       await this.userRepository.save(user);
     } catch (error) {
       throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Error saving user');
+    }
+
+    const sendMail = await this.emailService.sendUserRecovery(user);
+    if (!sendMail.success) {
+      throwHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Error sending email');
     }
 
     return sendMail;
